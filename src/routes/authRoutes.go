@@ -8,11 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// All Routes
-func SetupAllRoutes(router *gin.Engine, config *models.AppConfig) {
-	SetupAuthRoutes(router, config)
-}
-
 // Auth Routes
 func SetupAuthRoutes(router *gin.Engine, config *models.AppConfig) {
 	authGroup := router.Group("/auth")
@@ -23,6 +18,3 @@ func SetupAuthRoutes(router *gin.Engine, config *models.AppConfig) {
 		authGroup.POST("/refresh", middlewares.AuthMiddleware(), handlers.Refresh)
 	}
 }
-
-// Course Routes
-func SetupCourseRoutes(router *gin.Engine) {}
