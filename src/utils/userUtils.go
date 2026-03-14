@@ -7,6 +7,7 @@ import (
 	"segmenta/src/configs"
 	"segmenta/src/models"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -52,15 +53,15 @@ func ValidateJWT(tokenString string) (jwt.MapClaims, error) {
 	return nil, fmt.Errorf("invalid token")
 }
 
-func getUserID(c *gin.Context, prefix string) (uint, bool) {
+func GetUserID(c *gin.Context, prefix string) (uint, bool) {
 	userIDRaw, exists := c.Get("user_id")
 	if !exists {
-		utils.SendErrorResponse(c, prefix+" Unauthorized", 401)
+		SendErrorResponse(c, prefix+" Unauthorized", 401)
 		return 0, false
 	}
 	userIDFloat, ok := userIDRaw.(float64)
 	if !ok {
-		utils.SendErrorResponse(c, prefix+" Invalid user ID", 400)
+		SendErrorResponse(c, prefix+" Invalid user ID", 400)
 		return 0, false
 	}
 	return uint(userIDFloat), true

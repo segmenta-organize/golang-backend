@@ -1,8 +1,10 @@
 package middlewares
 
 import (
+	"strings"
+
 	"segmenta/src/utils"
-	
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,6 +13,12 @@ func AuthMiddleware() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			utils.SendErrorResponse(c, "Authorization header missing", 401)
+			c.Abort()
+			return
+		}
+
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			utils.SendErrorResponse(c, "Invalid authorization format, expected 'Bearer <token>'", 401)
 			c.Abort()
 			return
 		}
@@ -26,7 +34,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("user_id", claims["user_id"])
 		c.Set("email", claims["email"])
 		c.Set("name", claims["name"])
-		
+
 		c.Next()
 	}
 }
