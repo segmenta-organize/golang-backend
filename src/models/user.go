@@ -11,4 +11,5 @@ type User struct {
 	HashedPassword string    `gorm:"type:text;not null;column:hashed_password" json:"hashed_password"`
 	Bio            string    `gorm:"column:bio;type:text"`
 	CreatedAt      time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"created_at"`
+	ProfilePicLink string    `gorm:"column:profile_pic_link;type:text" json:"profile_pic_link"`
 }

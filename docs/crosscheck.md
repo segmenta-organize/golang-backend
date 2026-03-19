@@ -4,11 +4,15 @@
 
 - [x] 1.1 User Register.
 - [x] 1.2 Secure User Login.
-- [ ] 1.3 Forget Password.
-- [ ] 1.4 Account Deletion (Course and All of Chapter will be deleted).
-- [ ] 1.5 Password Change.
-- [ ] 1.6 Update Account Info.
-- [ ] 1.7 Profile Picture.
+- [x] 1.3 Logout User
+- [x] 1.4 Refresh Token.
+
+## 2.0 Profile 
+
+- [x] 2.1 Get One Profile Information by ID.
+- [x] 2.2 Update Profile Information by ID.
+- [x] 2.3 Delete Profile by ID (with all data).
+- [x] 2.4 Forgot Password.
 
 ## 2.0 Course & Chapter
 

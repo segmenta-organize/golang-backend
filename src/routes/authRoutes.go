@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Auth Routes
 func SetupAuthRoutes(router *gin.Engine, config *models.AppConfig) {
 	authGroup := router.Group("/auth")
 	{
@@ -16,5 +15,7 @@ func SetupAuthRoutes(router *gin.Engine, config *models.AppConfig) {
 		authGroup.POST("/login", handlers.Login)
 		authGroup.POST("/logout", handlers.Logout)
 		authGroup.POST("/refresh", middlewares.AuthMiddleware(), handlers.Refresh)
+		authGroup.POST("/forgot-password", handlers.ForgotPassword)
+		authGroup.POST("/reset-password", handlers.ResetPassword)
 	}
 }

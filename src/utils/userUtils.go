@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
+	"net/smtp"
 	"time"
 
 	"segmenta/src/configs"
@@ -65,4 +67,45 @@ func GetUserID(c *gin.Context, prefix string) (uint, bool) {
 		return 0, false
 	}
 	return uint(userIDFloat), true
+}
+
+func GenerateResetPasswordLink(email string) string {
+	token, errorHandler := GenerateJWT(&models.User{
+		Email: email,
+	})
+	if errorHandler != nil {
+		return ""
+	}
+	
+	if configs.LoadAppConfig().DomainName == "localhost" {
+		return "http://" + configs.LoadAppConfig().DomainName + ":" + configs.LoadAppConfig().FrontendPort + "/reset-password?token=" + token
+	}
+	return "http://" + configs.LoadAppConfig().DomainName + "/reset-password?token=" + token
+}
+
+func SendResetPasswordtoEmail(email string, resetLink string) error {
+	fromEmail := configs.LoadAppConfig().SMTPEmail
+	fromPassword := configs.LoadAppConfig().SMTPEmailPassword
+	smtpHost := configs.LoadAppConfig().SMTPHost
+	smtpPort := configs.LoadAppConfig().SMTPPort
+
+	message := []byte("Subject: Reset Password\n\n" +
+		"Click the following link to reset your Segmenta password :\n" + resetLink)
+
+	auth := smtp.PlainAuth("", fromEmail, fromPassword, smtpHost)
+	return smtp.SendMail(smtpHost+":"+smtpPort, auth, fromEmail, []string{email}, message)
+}
+
+func ParseResetPasswordToken(tokenString string) (string, error) {
+	claims, errorHandler := ValidateJWT(tokenString)
+	if errorHandler != nil {
+		return "", errorHandler
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok {
+		return "", errors.New("email claim not found in token")
+	}
+
+	return email, nil
 }

@@ -77,6 +77,10 @@ func CheckCourseLinkExists(userID uint, link string) (bool, error) {
 	return count > 0, result.Error
 }
 
+func DeleteCourseByUserID(userID uint) error {
+	return configs.Database.Where("user_id = ?", userID).Delete(&models.Course{}).Error
+}
+
 // Chapter Repositories
 
 func GetAllChaptersByCourseID(courseID uint) ([]models.Chapter, error) {
@@ -143,4 +147,8 @@ func UpdatePublicChapterFromChapter(chapterID uint, exploreChapterID uint) error
 
 func DeletePublicChapterFromChapter(exploreChapterID uint) error {
 	return configs.Database.Where("explore_chapter_id = ?", exploreChapterID).Delete(&models.ExploreChapter{}).Error
+}
+
+func DeleteChapterByUserID(userID uint) error {
+	return configs.Database.Where("user_id = ?", userID).Delete(&models.Chapter{}).Error
 }

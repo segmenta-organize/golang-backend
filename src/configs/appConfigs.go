@@ -19,8 +19,10 @@ func LoadAppConfig() *models.AppConfig {
 
 	return &models.AppConfig{
 		// Server configuration
-		BackendPort: getEnv("APP_PORT", "3344"),
-
+		BackendPort: getEnv("BACKEND_PORT", "3344"),
+		FrontendPort: getEnv("FRONTEND_PORT", "3000"),
+		DomainName:   getEnv("DOMAIN_NAME", "localhost"),
+		
 		// Database configuration
 		DBHost:       os.Getenv("DB_HOST"),
 		DBPort:       os.Getenv("DB_PORT"),
@@ -32,6 +34,12 @@ func LoadAppConfig() *models.AppConfig {
 
 		// JWT configuration
 		JWTSecret: os.Getenv("JWT_SECRET"),
+
+		// SMTP configuration
+		SMTPEmail:   	   os.Getenv("SMTP_EMAIL"),
+		SMTPEmailPassword: os.Getenv("SMTP_EMAIL_PASSWORD"),
+		SMTPHost:          os.Getenv("SMTP_HOST"),
+		SMTPPort:          os.Getenv("SMTP_PORT"),
 	}
 }
 

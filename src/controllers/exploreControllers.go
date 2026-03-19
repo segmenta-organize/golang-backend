@@ -161,7 +161,7 @@ func DeletePublicCourse(c *gin.Context) {
 	}
 
 	// DeletePublicCourse in repo now handles cascade delete of chapters
-	errorHandler = repositories.DeletePublicCourse(uint(courseID))
+	errorHandler = repositories.DeleteOnePublicCourseByID(uint(courseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[DELETE PUBLIC COURSE] Error deleting public course", 500)
 		return
@@ -311,3 +311,4 @@ func DeleteExploreChapter(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "[DELETE EXPLORE CHAPTER] Chapter deleted successfully", nil)
 }
+

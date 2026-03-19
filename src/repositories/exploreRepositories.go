@@ -7,6 +7,7 @@ import (
 
 // Explore Course Repositories
 
+
 func GetAllExploreCourses() ([]models.ExploreCourse, error) {
 	var exploreCourses []models.ExploreCourse
 	result := configs.Database.Find(&exploreCourses)
@@ -82,12 +83,15 @@ func EditPublicCourse(courseID uint, updatedCourse *models.ExploreCourse) error 
 	return configs.Database.Model(&models.ExploreCourse{}).Where("explore_course_id = ?", courseID).Updates(updatedCourse).Error
 }
 
-func DeletePublicCourse(courseID uint) error {
-	// Delete all related explore chapters first (cascade)
+func DeleteOnePublicCourseByID(courseID uint) error {
 	if err := DeleteExploreChaptersByCourseID(courseID); err != nil {
 		return err
 	}
 	return configs.Database.Where("explore_course_id = ?", courseID).Delete(&models.ExploreCourse{}).Error
+}
+
+func DeleteExploreChapterByUserID(userID uint) error {
+	return configs.Database.Where("user_id = ?", userID).Delete(&models.ExploreChapter{}).Error
 }
 
 // Explore Chapter Repositories
@@ -118,4 +122,8 @@ func DeleteExploreChapterByID(id uint) error {
 
 func DeleteExploreChaptersByCourseID(courseID uint) error {
 	return configs.Database.Where("explore_course_id = ?", courseID).Delete(&models.ExploreChapter{}).Error
+}
+
+func DeleteExploreCourseByUserID(userID uint) error {
+	return configs.Database.Where("creator_id = ?", userID).Delete(&models.ExploreCourse{}).Error
 }

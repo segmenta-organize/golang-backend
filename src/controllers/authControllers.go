@@ -88,7 +88,6 @@ func Logout(c *gin.Context) {
 		return
 	}
 
-	// Note: For production, implement token blacklisting with Redis or database
 	utils.SendSuccessResponse(c, "[LOGOUT] Logout successful", nil)
 }
 
@@ -99,7 +98,6 @@ func Refresh(c *gin.Context) {
 		return
 	}
 
-	// JWT MapClaims stores numbers as float64
 	var id uint
 	switch v := userID.(type) {
 
@@ -112,7 +110,7 @@ func Refresh(c *gin.Context) {
 		return
 	}
 
-	user, errorHandler := repositories.GetUserByID(id)
+	user, errorHandler := repositories.GetUserByUserID(id)
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[REFRESH] User not found", 404)
 		return
@@ -125,4 +123,78 @@ func Refresh(c *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(c, "[REFRESH] Token refreshed successfully", gin.H{"token": newToken})
+}
+
+func ForgotPassword(c *gin.Context) {
+	var forgotPasswordRequest struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	if errorHandler := c.ShouldBindJSON(&forgotPasswordRequest); errorHandler != nil {
+		utils.SendErrorResponse(c, "[FORGOT PASSWORD] Invalid request data", 400)
+		return
+	}
+
+	user, errorHandler := repositories.GetUserByEmail(forgotPasswordRequest.Email)
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[FORGOT PASSWORD] User not found", 404)
+		return
+	}
+
+	resetLink := utils.GenerateResetPasswordLink(user.Email)
+	if resetLink == "" {
+		utils.SendErrorResponse(c, "[FORGOT PASSWORD] Error generating reset link", 500)
+		return
+	}
+
+	errorHandler = utils.SendResetPasswordtoEmail(user.Email, resetLink)
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[FORGOT PASSWORD] Error sending reset password email", 500)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "[FORGOT PASSWORD] Forgot password request successful", gin.H{"status": "success"})
+}
+
+func ResetPassword(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		utils.SendErrorResponse(c, "[RESET PASSWORD] Token is required", 400)
+		return
+	}
+
+	var resetPasswordRequest struct {
+		NewPassword string `json:"new_password" binding:"required,min=6"`
+	}
+
+	if errorHandler := c.ShouldBindJSON(&resetPasswordRequest); errorHandler != nil {
+		utils.SendErrorResponse(c, "[RESET PASSWORD] Invalid request data", 400)
+		return
+	}
+
+	email, errorHandler := utils.ParseResetPasswordToken(token)
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[RESET PASSWORD] Invalid or expired token", 400)
+		return
+	}
+
+	user, errorHandler := repositories.GetUserByEmail(email)
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[RESET PASSWORD] User not found", 404)
+		return
+	}
+
+	hashedPassword, errorHandler := utils.PasswordHashing(resetPasswordRequest.NewPassword)
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[RESET PASSWORD] Error hashing password", 500)
+		return
+	}
+
+	user.HashedPassword = hashedPassword
+	if errorHandler := repositories.UpdateUserByUserID(user); errorHandler != nil {
+		utils.SendErrorResponse(c, "[RESET PASSWORD] Error updating password", 500)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "[RESET PASSWORD] Password reset successful", nil)
 }
