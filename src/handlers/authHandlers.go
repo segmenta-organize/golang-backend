@@ -1,31 +1,31 @@
 package handlers
 
 import (
-	"segmenta/src/controllers"
+	"segmenta/src/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 func Register(c *gin.Context) {
-	controllers.Register(c)
+	services.Register(c)
 }
 
 func Login(c *gin.Context) {
-	controllers.Login(c)
+	services.Login(c)
 }
 
 func Logout(c *gin.Context) {
-	controllers.Logout(c)
+	services.Logout(c)
 }
 
 func Refresh(c *gin.Context) {
-	controllers.Refresh(c)
+	services.Refresh(c)
 }
 
 func ForgotPassword(c *gin.Context) {
-	controllers.ForgotPassword(c)
+	services.ForgotPassword(c)
 }
 
 func ResetPassword(c *gin.Context) {
-	controllers.ResetPassword(c)
+	services.ResetPassword(c)
 }

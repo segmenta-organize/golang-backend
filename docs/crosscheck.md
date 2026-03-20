@@ -18,14 +18,12 @@
 
 - [x] 2.1 Get All Taken Course (Uncompleted, Completed).
 - [x] 2.2 Can Get one Course Information (with the Chapter.)
-- [x] 2.3 Create Manual Course.
-- [x] 2.4 Create Manual Chapter.
-- [ ] 2.5 Create Auto Chapter (from description). 
-- [x] 2.6 Create Fully Auto Course Only from Youtube Link (Youtube Generate).
-- [ ] 2.7 Create from Explore (Data Duplication with Duplicate Course).
-- [ ] 2.8 Can Edit Course Manual (with Chapter)
-- [ ] 2.9 Can Edit course auto (with script) (Remake)
-- [ ] 2.10 Delete Course (with Chapter)
+- [x] 2.3 Create Manual Course with Chapter.
+- [x] 2.5 Create Auto Courses with Chapter (from description). 
+- [x] 2.7 Create from Explore (Data Duplication with Duplicate Course).
+- [x] 2.8 Can Edit Course Manual (with Chapter)
+- [x] 2.9 Can Edit course auto (with script) (Remake)
+- [x] 2.10 Delete Course (with Chapter)
 
 ## 3.0 Explore Course
 

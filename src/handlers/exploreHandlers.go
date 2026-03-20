@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"segmenta/src/controllers"
+	"segmenta/src/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,51 +9,51 @@ import (
 // Explore Course Handlers
 
 func GetAllExploreCourses(c *gin.Context) {
-	controllers.GetAllExploreCourses(c)
+	services.GetAllExploreCourses(c)
 }
 
 func GetExploreCourseByID(c *gin.Context) {
-	controllers.GetExploreCourseByID(c)
+	services.GetExploreCourseByID(c)
 }
 
 func SearchCourses(c *gin.Context) {
-	controllers.SearchCourses(c)
+	services.SearchCourses(c)
 }
 
 func GetAllCoursesByCategoryForExplore(c *gin.Context) {
-	controllers.GetAllCoursesByCategoryForExplore(c)
+	services.GetAllCoursesByCategoryForExplore(c)
 }
 
 func EnrollInCourse(c *gin.Context) {
-	controllers.EnrollInCourse(c)
+	services.EnrollInCourse(c)
 }
 
 func EditPublicCourse(c *gin.Context) {
-	controllers.EditPublicCourse(c)
+	services.EditPublicCourse(c)
 }
 
 func DeletePublicCourse(c *gin.Context) {
-	controllers.DeletePublicCourse(c)
+	services.DeletePublicCourse(c)
 }
 
 // Explore Course Chapter Handlers
 
 func GetAllExploreChapterByExploreCourseID(c *gin.Context) {
-	controllers.GetAllExploreChapterByExploreCourseID(c)
+	services.GetAllExploreChapterByExploreCourseID(c)
 }
 
 func GetOneExploreChapterByCourseID(c *gin.Context) {
-	controllers.GetOneExploreChapterByCourseID(c)
+	services.GetOneExploreChapterByCourseID(c)
 }
 
 func CreateExploreChapter(c *gin.Context) {
-	controllers.CreateExploreChapter(c)
+	services.CreateExploreChapter(c)
 }
 
 func UpdateExploreChapter(c *gin.Context) {
-	controllers.UpdateExploreChapter(c)
+	services.UpdateExploreChapter(c)
 }
 
 func DeleteExploreChapter(c *gin.Context) {
-	controllers.DeleteExploreChapter(c)
+	services.DeleteExploreChapter(c)
 }

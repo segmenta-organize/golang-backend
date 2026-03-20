@@ -1,4 +1,4 @@
-package controllers
+package services
 
 import (
 	"log"
@@ -11,23 +11,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetAllCourses(c *gin.Context) {
-	userID, ok := utils.GetUserID(c, "[GET COURSES]")
+func GetAllEnrolledCourses(c *gin.Context) {
+	userID, ok := utils.GetUserID(c, "[GET ALL ENROLLED COURSES]")
 	if !ok {
 		return
 	}
 
-	courses, errorHandler := repositories.GetAllCourses(userID)
+	courses, errorHandler := repositories.GetAllEnrolledCourses(userID)
 	if errorHandler != nil {
-		utils.SendErrorResponse(c, "[GET COURSES] Error fetching courses", 500)
+		utils.SendErrorResponse(c, "[GET ALL ENROLLED COURSES] Error fetching courses", 500)
 		return
 	}
 
-	utils.SendSuccessResponse(c, "[GET COURSES] Courses fetched successfully", gin.H{"courses": courses})
+	utils.SendSuccessResponse(c, "[GET ALL ENROLLED COURSES] Courses fetched successfully", gin.H{"courses": courses})
 }
 
-func GetCourseByID(c *gin.Context) {
-	userID, ok := utils.GetUserID(c, "[GET COURSE BY ID]")
+func GetOneCourseWithChaptersByID(c *gin.Context) {
+	userID, ok := utils.GetUserID(c, "[GET ONE COURSE WITH CHAPTERS BY ID]")
 	if !ok {
 		return
 	}
@@ -35,53 +35,107 @@ func GetCourseByID(c *gin.Context) {
 	courseIDStr := c.Param("id")
 	courseID, errorHandler := strconv.ParseUint(courseIDStr, 10, 64)
 	if errorHandler != nil {
-		utils.SendErrorResponse(c, "[GET COURSE BY ID] Invalid course ID", 400)
+		utils.SendErrorResponse(c, "[GET ONE COURSE WITH CHAPTERS BY ID] Invalid course ID", 400)
 		return
 	}
 
-	course, errorHandler := repositories.GetCourseByID(uint(courseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(courseID))
 	if errorHandler != nil {
-		utils.SendErrorResponse(c, "[GET COURSE BY ID] Error fetching course", 500)
+		utils.SendErrorResponse(c, "[GET ONE COURSE WITH CHAPTERS BY ID] Error fetching course", 500)
 		return
 	}
 
 	if uint(course.UserID) != userID {
-		utils.SendErrorResponse(c, "[GET COURSE BY ID] Forbidden", 403)
+		utils.SendErrorResponse(c, "[GET ONE COURSE WITH CHAPTERS BY ID] Forbidden", 403)
 		return
 	}
 
-	utils.SendSuccessResponse(c, "[GET COURSE BY ID] Course fetched successfully", gin.H{"course": course})
+	currentChapters, errorHandler := repositories.GetAllChaptersByCourseID(uint(courseID))
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[GET ONE COURSE WITH CHAPTERS BY ID] Error fetching chapter", 500)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "[GET ONE COURSE BY ID] Course fetched successfully", gin.H{
+		"course": course, 
+		"chapters": currentChapters,
+	})
 }
 
-func CreateCourse(c *gin.Context) {
+func CreateManualCourseWithChapters(c *gin.Context) {
 	userID, ok := utils.GetUserID(c, "[CREATE COURSE]")
 	if !ok {
 		return
 	}
 
-	var courseCreateRequest struct {
-		VideoLink string `json:"video_link" binding:"required"`
+	type chapterCreateRequest struct {
+		Title          string  `json:"title" binding:"required"`
+		VideoTimestamp *string `json:"video_timestamp,omitempty"`
 	}
 
-	if err := c.ShouldBindJSON(&courseCreateRequest); err != nil {
+	var request struct {
+		Title             string                 `json:"title" binding:"required"`
+		Description       *string                `json:"description,omitempty"`
+		Channel           *string                `json:"channel,omitempty"`
+		ChannelLink       *string                `json:"channel_link,omitempty"`
+		VideoLink         *string                `json:"video_link" binding:"required"`
+		ThumbnailImageURL *string                `json:"thumbnail_image_url,omitempty"`
+		Chapters          []chapterCreateRequest `json:"chapters,omitempty"`
+	}
+
+	if errorHandler := c.ShouldBindJSON(&request); errorHandler != nil {
 		utils.SendErrorResponse(c, "[CREATE COURSE] Invalid request data", 400)
 		return
 	}
 
-	course := models.Course{
-		UserID:    int(userID),
-		VideoLink: &courseCreateRequest.VideoLink,
+	if request.VideoLink != nil && *request.VideoLink != "" {
+		if utils.LinkDuplicateCheck(c, "[CREATE COURSE]", "course_link", *request.VideoLink) {
+			return
+		}
 	}
 
-	if err := repositories.CreateCourse(&course); err != nil {
+	course := models.Course{
+		UserID:            int(userID),
+		Title:             request.Title,
+		Description:       request.Description,
+		Channel:           request.Channel,
+		ChannelLink:       request.ChannelLink,
+		VideoLink:         request.VideoLink,
+		ThumbnailImageURL: request.ThumbnailImageURL,
+	}
+
+	if errorHandler := repositories.CreateCourse(&course); errorHandler != nil {
 		utils.SendErrorResponse(c, "[CREATE COURSE] Error creating course", 500)
 		return
 	}
 
-	utils.SendSuccessResponse(c, "[CREATE COURSE] Course created successfully", gin.H{"course": course})
+	createdChapters := make([]models.Chapter, 0, len(request.Chapters))
+	for i, chapterRequest := range request.Chapters {
+		chapter := models.Chapter{
+			CourseID:       int(course.CourseID),
+			Title:          chapterRequest.Title,
+			VideoTimestamp: chapterRequest.VideoTimestamp,
+			Position:       i + 1,
+		}
+
+		if errorHandler := repositories.CreateChapter(&chapter); errorHandler != nil {
+			_ = repositories.DeleteChaptersByCourseID(uint(course.CourseID))
+			_ = repositories.DeleteOneCourseByID(uint(course.CourseID))
+
+			utils.SendErrorResponse(c, "[CREATE COURSE] Error creating chapters", 500)
+			return
+		}
+
+		createdChapters = append(createdChapters, chapter)
+	}
+
+	utils.SendSuccessResponse(c, "[CREATE COURSE] Course created successfully", gin.H{
+		"course":   course,
+		"chapters": createdChapters,
+	})
 }
 
-func AutoCreateCourses(c *gin.Context) {
+func AutoCreateCourseWithChapters(c *gin.Context) {
 	userID, ok := utils.GetUserID(c, "[AUTO CREATE COURSE]")
 	if !ok {
 		return
@@ -115,7 +169,6 @@ func AutoCreateCourses(c *gin.Context) {
 		return
 	}
 
-	// Create course with full metadata
 	course := models.Course{
 		UserID:            int(userID),
 		Title:             metadata.Title,
@@ -131,7 +184,6 @@ func AutoCreateCourses(c *gin.Context) {
 		return
 	}
 
-	// Auto-create chapters from description timestamps
 	var createdChapters []models.Chapter
 	if utils.IsDurationInDescription(metadata.Description) {
 		chapters := utils.ChapterMakerFromDescription(metadata.Description, int(course.CourseID))
@@ -148,20 +200,20 @@ func AutoCreateCourses(c *gin.Context) {
 	})
 }
 
-func UpdateCourse(c *gin.Context) {
+func UpdateCourseWithChapters(c *gin.Context) {
 	userID, ok := utils.GetUserID(c, "[UPDATE COURSE]")
 	if !ok {
 		return
 	}
 
 	courseIDStr := c.Param("id")
-	courseID, err := strconv.ParseUint(courseIDStr, 10, 64)
-	if err != nil {
+	courseID, errorHandler := strconv.ParseUint(courseIDStr, 10, 64)
+	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE COURSE] Invalid course ID", 400)
 		return
 	}
 
-	existingCourse, errorHandler := repositories.GetCourseByID(uint(courseID))
+	existingCourse, errorHandler := repositories.GetOneCourseByID(uint(courseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE COURSE] Error fetching course", 500)
 		return
@@ -172,21 +224,191 @@ func UpdateCourse(c *gin.Context) {
 		return
 	}
 
-	var courseUpdateRequest models.Course
-	if err := c.ShouldBindJSON(&courseUpdateRequest); err != nil {
+	type chapterUpsertRequest struct {
+		ChapterID       *uint   `json:"chapter_id,omitempty"`
+		Title           string  `json:"title,omitempty"`
+		VideoTimestamp  *string `json:"video_timestamp,omitempty"`
+		Position        int     `json:"position,omitempty"`
+		Delete          bool    `json:"delete,omitempty"`
+	}
+
+	type courseUpdateWithChaptersRequest struct {
+		Title             *string                `json:"title,omitempty"`
+		Description       *string                `json:"description,omitempty"`
+		Channel           *string                `json:"channel,omitempty"`
+		ChannelLink       *string                `json:"channel_link,omitempty"`
+		VideoLink         *string                `json:"video_link,omitempty"`
+		ThumbnailImageURL *string                `json:"thumbnail_image_url,omitempty"`
+		Chapters          []chapterUpsertRequest `json:"chapters,omitempty"`
+	}
+
+	var request courseUpdateWithChaptersRequest
+	if errorHandler = c.ShouldBindJSON(&request); errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE COURSE] Invalid request data", 400)
 		return
 	}
 
-	if err := repositories.UpdateCourseByID(uint(courseID), &courseUpdateRequest); err != nil {
-		utils.SendErrorResponse(c, "[UPDATE COURSE] Error updating course", 500)
+	courseUpdate := models.Course{}
+	if request.Title != nil {
+		courseUpdate.Title = *request.Title
+	}
+	if request.Description != nil {
+		courseUpdate.Description = request.Description
+	}
+	if request.Channel != nil {
+		courseUpdate.Channel = request.Channel
+	}
+	if request.ChannelLink != nil {
+		courseUpdate.ChannelLink = request.ChannelLink
+	}
+	if request.VideoLink != nil {
+		if *request.VideoLink != "" && existingCourse.VideoLink != nil && *existingCourse.VideoLink != *request.VideoLink {
+			if utils.LinkDuplicateCheck(c, "[UPDATE COURSE]", "course_link", *request.VideoLink) {
+				return
+			}
+		}
+		courseUpdate.VideoLink = request.VideoLink
+	}
+	if request.ThumbnailImageURL != nil {
+		courseUpdate.ThumbnailImageURL = request.ThumbnailImageURL
+	}
+
+	if request.Chapters != nil {
+		if errorHandler = repositories.UpdateCourseByID(uint(courseID), &courseUpdate); errorHandler != nil {
+			utils.SendErrorResponse(c, "[UPDATE COURSE] Error updating course", 500)
+			return
+		}
+	
+		if errorHandler = repositories.DeleteAllChaptersInOneCourseByID(uint(courseID)); errorHandler != nil {
+			utils.SendErrorResponse(c, "[UPDATE COURSE] Error deleting chapters", 500)
+			return
+		}
+
+		for _, chapterRequest := range request.Chapters {
+			if chapterRequest.Delete {
+				continue
+			}
+
+			chapter := models.Chapter{
+				CourseID:       int(courseID),
+				Title:          chapterRequest.Title,
+				VideoTimestamp: chapterRequest.VideoTimestamp,
+				Position:       chapterRequest.Position,
+			}
+
+			if errorHandler = repositories.CreateChapter(&chapter); errorHandler != nil {
+				utils.SendErrorResponse(c, "[UPDATE COURSE] Error creating chapter", 500)
+				return
+			}
+		}
+	}
+
+	updatedCourse, errorHandler := repositories.GetOneCourseByID(uint(courseID))
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[UPDATE COURSE] Error fetching updated course", 500)
 		return
 	}
 
-	utils.SendSuccessResponse(c, "[UPDATE COURSE] Course updated successfully", nil)
+	updatedChapters, errorHandler := repositories.GetAllChaptersByCourseID(uint(courseID))
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[UPDATE COURSE] Error fetching updated chapters", 500)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "[UPDATE COURSE] Course updated successfully", gin.H{
+		"course":   updatedCourse,
+		"chapters": updatedChapters,
+	})
 }
 
-func DeleteCourse(c *gin.Context) {
+func AutoUpdateCourseWithChapters(c *gin.Context) {
+	userID, ok := utils.GetUserID(c, "[AUTO UPDATE COURSE]")
+	if !ok {
+		return
+	}
+
+	courseIDStr := c.Param("id")
+	courseID, errorHandler := strconv.ParseUint(courseIDStr, 10, 64)
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Invalid course ID", 400)
+		return
+	}
+
+	existingCourse, errorHandler := repositories.GetOneCourseByID(uint(courseID))
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Error fetching course", 500)
+		return
+	}
+
+	if uint(existingCourse.UserID) != userID {
+		utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Forbidden", 403)
+		return
+	}
+
+	var request struct {
+		Text 	  string `json:"text" binding:"required"`
+		VideoLink *string `json:"video_link,omitempty" binding:"omitempty,url,required_with=Text"`
+	}
+
+	if errorHandler = c.ShouldBindJSON(&request); errorHandler != nil {
+		utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Invalid request data", 400)
+		return
+	}
+
+	if request.VideoLink != nil {
+		if *request.VideoLink != "" && existingCourse.VideoLink != nil && *existingCourse.VideoLink != *request.VideoLink {
+			if utils.LinkDuplicateCheck(c, "[AUTO UPDATE COURSE]", "course_link", *request.VideoLink) {
+				return
+			}
+		}
+	}
+
+	courseUpdate := models.Course{}
+	if request.VideoLink != nil {
+		metadata := utils.AutoUpdateMetadata(&courseUpdate, *request.VideoLink)
+		if metadata != nil {
+			utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Error updating course", 500)
+			return
+		}
+	}
+
+	if errorHandler = repositories.UpdateCourseByID(uint(courseID), &courseUpdate); errorHandler != nil {
+		utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Error updating course", 500)
+		return
+	}
+
+	if errorHandler = repositories.DeleteAllChaptersInOneCourseByID(uint(courseID)); errorHandler != nil {
+		utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Error deleting chapters", 500)
+		return
+	}
+
+	chapters := utils.ChapterMakerFromDescription(request.Text, int(courseID))
+	var createdChapters []models.Chapter
+	for _, chapter := range chapters {
+		if errorHandler = repositories.CreateChapter(&chapter); errorHandler == nil {
+			createdChapters = append(createdChapters, chapter)
+		}
+	}
+
+	updatedCourse, errorHandler := repositories.GetOneCourseByID(uint(courseID))
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Error fetching updated course", 500)
+		return
+	}
+
+	updatedChapters, errorHandler := repositories.GetAllChaptersByCourseID(uint(courseID))
+	if errorHandler != nil {
+		utils.SendErrorResponse(c, "[AUTO UPDATE COURSE] Error fetching updated chapters", 500)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "[AUTO UPDATE COURSE] Course updated successfully", gin.H{
+		"course":   updatedCourse,
+		"chapters": updatedChapters,
+	})
+}
+
+func DeleteOneCourseByID(c *gin.Context) {
 	userID, ok := utils.GetUserID(c, "[DELETE COURSE]")
 	if !ok {
 		return
@@ -199,7 +421,7 @@ func DeleteCourse(c *gin.Context) {
 		return
 	}
 
-	existingCourse, errorHandler := repositories.GetCourseByID(uint(courseID))
+	existingCourse, errorHandler := repositories.GetOneCourseByID(uint(courseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[DELETE COURSE] Error fetching course", 500)
 		return
@@ -210,13 +432,12 @@ func DeleteCourse(c *gin.Context) {
 		return
 	}
 
-	// Delete all chapters associated with this course first (cascade)
-	if errorHandler := repositories.DeleteChaptersByCourseID(uint(courseID)); errorHandler != nil {
+	if errorHandler = repositories.DeleteAllChaptersInOneCourseByID(uint(courseID)); errorHandler != nil {
 		utils.SendErrorResponse(c, "[DELETE COURSE] Error deleting chapters", 500)
 		return
 	}
 
-	if errorHandler := repositories.DeleteCourseByID(uint(courseID)); errorHandler != nil {
+	if errorHandler := repositories.DeleteOneCourseByID(uint(courseID)); errorHandler != nil {
 		utils.SendErrorResponse(c, "[DELETE COURSE] Error deleting course", 500)
 		return
 	}
@@ -239,7 +460,7 @@ func CreatePublicCourseFromCourse(c *gin.Context) {
 		return
 	}
 
-	existingCourse, errorHandler := repositories.GetCourseByID(uint(courseID))
+	existingCourse, errorHandler := repositories.GetOneCourseByID(uint(courseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[CREATE PUBLIC COURSE] Error fetching course", 500)
 		return
@@ -271,7 +492,7 @@ func UpdatePublicCourseFromCourse(c *gin.Context) {
 		return
 	}
 
-	existingCourse, errorHandler := repositories.GetCourseByID(uint(courseID))
+	existingCourse, errorHandler := repositories.GetOneCourseByID(uint(courseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE PUBLIC COURSE] Error fetching course", 500)
 		return
@@ -286,7 +507,7 @@ func UpdatePublicCourseFromCourse(c *gin.Context) {
 	var requestBody struct {
 		ExploreCourseID uint `json:"explore_course_id" binding:"required"`
 	}
-	if err := c.ShouldBindJSON(&requestBody); err != nil {
+	if errorHandler := c.ShouldBindJSON(&requestBody); errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE PUBLIC COURSE] explore_course_id is required", 400)
 		return
 	}
@@ -299,7 +520,7 @@ func UpdatePublicCourseFromCourse(c *gin.Context) {
 	utils.SendSuccessResponse(c, "[UPDATE PUBLIC COURSE] Public course updated successfully", nil)
 }
 
-// Chapter Controllers
+// Chapter services
 
 func GetAllChaptersByCourseID(c *gin.Context) {
 	userID, ok := utils.GetUserID(c, "[GET CHAPTERS BY COURSE ID]")
@@ -314,7 +535,7 @@ func GetAllChaptersByCourseID(c *gin.Context) {
 		return
 	}
 
-	course, errorHandler := repositories.GetCourseByID(uint(courseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(courseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[GET CHAPTERS BY COURSE ID] Error fetching course", 500)
 		return
@@ -354,7 +575,7 @@ func GetOneChapterByID(c *gin.Context) {
 	}
 
 	// Verify ownership through the parent course
-	course, errorHandler := repositories.GetCourseByID(uint(chapter.CourseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(chapter.CourseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[GET CHAPTER BY ID] Error fetching course", 500)
 		return
@@ -381,7 +602,7 @@ func CreateChapter(c *gin.Context) {
 		return
 	}
 
-	course, errorHandler := repositories.GetCourseByID(uint(courseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(courseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[CREATE CHAPTER] Error fetching course", 500)
 		return
@@ -398,7 +619,7 @@ func CreateChapter(c *gin.Context) {
 		Position       int     `json:"position" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&chapterCreateRequest); err != nil {
+	if errorHandler := c.ShouldBindJSON(&chapterCreateRequest); errorHandler != nil {
 		utils.SendErrorResponse(c, "[CREATE CHAPTER] Invalid request data", 400)
 		return
 	}
@@ -410,7 +631,7 @@ func CreateChapter(c *gin.Context) {
 		Position:       chapterCreateRequest.Position,
 	}
 
-	if err := repositories.CreateChapter(&chapter); err != nil {
+	if errorHandler := repositories.CreateChapter(&chapter); errorHandler != nil {
 		utils.SendErrorResponse(c, "[CREATE CHAPTER] Error creating chapter", 500)
 		return
 	}
@@ -437,7 +658,7 @@ func UpdateChapter(c *gin.Context) {
 		return
 	}
 
-	course, errorHandler := repositories.GetCourseByID(uint(existingChapter.CourseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(existingChapter.CourseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE CHAPTER] Error fetching course", 500)
 		return
@@ -449,12 +670,12 @@ func UpdateChapter(c *gin.Context) {
 	}
 
 	var chapterUpdateRequest models.Chapter
-	if err := c.ShouldBindJSON(&chapterUpdateRequest); err != nil {
+	if errorHandler := c.ShouldBindJSON(&chapterUpdateRequest); errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE CHAPTER] Invalid request data", 400)
 		return
 	}
 
-	if err := repositories.UpdateChapterByID(uint(chapterID), &chapterUpdateRequest); err != nil {
+	if errorHandler := repositories.UpdateChapterByID(uint(chapterID), &chapterUpdateRequest); errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE CHAPTER] Error updating chapter", 500)
 		return
 	}
@@ -481,7 +702,7 @@ func DeleteChapter(c *gin.Context) {
 		return
 	}
 
-	course, errorHandler := repositories.GetCourseByID(uint(existingChapter.CourseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(existingChapter.CourseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[DELETE CHAPTER] Error fetching course", 500)
 		return
@@ -522,7 +743,7 @@ func CreatePublicChapterFromChapter(c *gin.Context) {
 		return
 	}
 
-	course, errorHandler := repositories.GetCourseByID(uint(chapter.CourseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(chapter.CourseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[CREATE PUBLIC CHAPTER] Course not found", 404)
 		return
@@ -536,7 +757,7 @@ func CreatePublicChapterFromChapter(c *gin.Context) {
 	var requestBody struct {
 		ExploreCourseID uint `json:"explore_course_id" binding:"required"`
 	}
-	if err := c.ShouldBindJSON(&requestBody); err != nil {
+	if errorHandler := c.ShouldBindJSON(&requestBody); errorHandler != nil {
 		utils.SendErrorResponse(c, "[CREATE PUBLIC CHAPTER] explore_course_id is required", 400)
 		return
 	}
@@ -569,7 +790,7 @@ func UpdatePublicChapterFromChapter(c *gin.Context) {
 		return
 	}
 
-	course, errorHandler := repositories.GetCourseByID(uint(chapter.CourseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(chapter.CourseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE PUBLIC CHAPTER] Course not found", 404)
 		return
@@ -583,7 +804,7 @@ func UpdatePublicChapterFromChapter(c *gin.Context) {
 	var requestBody struct {
 		ExploreChapterID uint `json:"explore_chapter_id" binding:"required"`
 	}
-	if err := c.ShouldBindJSON(&requestBody); err != nil {
+	if errorHandler := c.ShouldBindJSON(&requestBody); errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE PUBLIC CHAPTER] explore_chapter_id is required", 400)
 		return
 	}
@@ -616,7 +837,7 @@ func DeletePublicChapterFromChapter(c *gin.Context) {
 		return
 	}
 
-	course, errorHandler := repositories.GetCourseByID(uint(chapter.CourseID))
+	course, errorHandler := repositories.GetOneCourseByID(uint(chapter.CourseID))
 	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[DELETE PUBLIC CHAPTER] Course not found", 404)
 		return
@@ -630,7 +851,7 @@ func DeletePublicChapterFromChapter(c *gin.Context) {
 	var requestBody struct {
 		ExploreChapterID uint `json:"explore_chapter_id" binding:"required"`
 	}
-	if err := c.ShouldBindJSON(&requestBody); err != nil {
+	if errorHandler := c.ShouldBindJSON(&requestBody); errorHandler != nil {
 		utils.SendErrorResponse(c, "[DELETE PUBLIC CHAPTER] explore_chapter_id is required", 400)
 		return
 	}

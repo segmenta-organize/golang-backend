@@ -39,13 +39,11 @@ func EnrollUserInCourse(userID uint, courseID uint) error {
 		return result.Error
 	}
 
-	// Safe dereference of Version — default to 1 if nil
 	sourceVersion := 1
 	if templateCourse.Version != nil {
 		sourceVersion = *templateCourse.Version
 	}
 
-	// Copy course data
 	sourceID := int(courseID)
 	newCourse := models.Course{
 		UserID:               int(userID),
@@ -59,18 +57,17 @@ func EnrollUserInCourse(userID uint, courseID uint) error {
 		SourceVersion:        sourceVersion,
 	}
 
-	if err := configs.Database.Create(&newCourse).Error; err != nil {
-		return err
+	if errorHandler := configs.Database.Create(&newCourse).Error; errorHandler != nil {
+		return errorHandler
 	}
 
-	// Copy chapters from explore course to user course
 	var exploreChapters []models.ExploreChapter
 	configs.Database.Where("explore_course_id = ?", courseID).Order("\"order\" ASC").Find(&exploreChapters)
-
-	for i, ec := range exploreChapters {
+	
+	for i, exploreChapter := range exploreChapters {
 		chapter := models.Chapter{
 			CourseID: int(newCourse.CourseID),
-			Title:    ec.Title,
+			Title:    exploreChapter.Title,
 			Position: i + 1,
 		}
 		configs.Database.Create(&chapter)
@@ -84,8 +81,8 @@ func EditPublicCourse(courseID uint, updatedCourse *models.ExploreCourse) error 
 }
 
 func DeleteOnePublicCourseByID(courseID uint) error {
-	if err := DeleteExploreChaptersByCourseID(courseID); err != nil {
-		return err
+	if errorHandler := DeleteExploreChaptersByCourseID(courseID); errorHandler != nil {
+		return errorHandler
 	}
 	return configs.Database.Where("explore_course_id = ?", courseID).Delete(&models.ExploreCourse{}).Error
 }

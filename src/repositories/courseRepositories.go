@@ -7,13 +7,13 @@ import (
 
 // Course Repositories
 
-func GetAllCourses(userID uint) ([]models.Course, error) {
+func GetAllEnrolledCourses(userID uint) ([]models.Course, error) {
 	var courses []models.Course
 	result := configs.Database.Where("user_id = ?", userID).Find(&courses)
 	return courses, result.Error
 }
 
-func GetCourseByID(id uint) (*models.Course, error) {
+func GetOneCourseByID(id uint) (*models.Course, error) {
 	var course models.Course
 	result := configs.Database.First(&course, "course_id = ?", id)
 	return &course, result.Error
@@ -23,19 +23,23 @@ func CreateCourse(course *models.Course) error {
 	return configs.Database.Create(course).Error
 }
 
+func DeleteAllChaptersInOneCourseByID(courseID uint) error {
+	return configs.Database.Where("course_id = ?", courseID).Delete(&models.Chapter{}).Error
+}
+
 func UpdateCourseByID(id uint, course *models.Course) error {
 	return configs.Database.Model(&models.Course{}).Where("course_id = ?", id).Updates(course).Error
 }
 
-func DeleteCourseByID(id uint) error {
+func DeleteOneCourseByID(id uint) error {
 	return configs.Database.Where("course_id = ?", id).Delete(&models.Course{}).Error
 }
 
 func CreatePublicCourseFromCourse(courseID uint, userID uint) error {
 	version := 1
 	var course models.Course
-	if err := configs.Database.First(&course, "course_id = ?", courseID).Error; err != nil {
-		return err
+	if errorHandler := configs.Database.First(&course, "course_id = ?", courseID).Error; errorHandler != nil {
+		return errorHandler
 	}
 
 	exploreCourse := models.ExploreCourse{
@@ -54,8 +58,8 @@ func CreatePublicCourseFromCourse(courseID uint, userID uint) error {
 
 func UpdatePublicCourseFromCourse(courseID uint, exploreCourseID uint) error {
 	var course models.Course
-	if err := configs.Database.First(&course, "course_id = ?", courseID).Error; err != nil {
-		return err
+	if errorHandler := configs.Database.First(&course, "course_id = ?", courseID).Error; errorHandler != nil {
+		return errorHandler
 	}
 
 	return configs.Database.Model(&models.ExploreCourse{}).
@@ -115,8 +119,8 @@ func DeleteChaptersByCourseID(courseID uint) error {
 
 func CreatePublicChapterFromChapter(chapterID uint, exploreCourseID uint) error {
 	var chapter models.Chapter
-	if err := configs.Database.First(&chapter, "chapter_id = ?", chapterID).Error; err != nil {
-		return err
+	if errorHandler := configs.Database.First(&chapter, "chapter_id = ?", chapterID).Error; errorHandler != nil {
+		return errorHandler
 	}
 
 	// Count existing explore chapters to determine order
@@ -134,8 +138,8 @@ func CreatePublicChapterFromChapter(chapterID uint, exploreCourseID uint) error 
 
 func UpdatePublicChapterFromChapter(chapterID uint, exploreChapterID uint) error {
 	var chapter models.Chapter
-	if err := configs.Database.First(&chapter, "chapter_id = ?", chapterID).Error; err != nil {
-		return err
+	if errorHandler := configs.Database.First(&chapter, "chapter_id = ?", chapterID).Error; errorHandler != nil {
+		return errorHandler
 	}
 
 	return configs.Database.Model(&models.ExploreChapter{}).

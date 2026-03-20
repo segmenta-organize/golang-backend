@@ -11,12 +11,13 @@ import (
 func SetupCourseRoutes(router *gin.Engine, config *models.AppConfig) {
 	courseGroup := router.Group("/courses")
 	{
-		courseGroup.GET("/", middlewares.AuthMiddleware(), handlers.GetCourses)
-		courseGroup.GET("/:id", middlewares.AuthMiddleware(), handlers.GetCourseByID)
-		courseGroup.POST("/create", middlewares.AuthMiddleware(), handlers.CreateCourse)
-		courseGroup.POST("/auto-create", middlewares.AuthMiddleware(), handlers.AutoCreateCourse)
-		courseGroup.PUT("/:id/edit", middlewares.AuthMiddleware(), handlers.UpdateCourse)
-		courseGroup.DELETE("/:id/delete", middlewares.AuthMiddleware(), handlers.DeleteCourse)
+		courseGroup.GET("/", middlewares.AuthMiddleware(), handlers.GetAllEnrolledCourses)
+		courseGroup.GET("/:id", middlewares.AuthMiddleware(), handlers.GetOneCourseWithChaptersByID)
+		courseGroup.POST("/create", middlewares.AuthMiddleware(), handlers.CreateManualCourseWithChapters)
+		courseGroup.POST("/auto-create", middlewares.AuthMiddleware(), handlers.AutoCreateCourseWithChapters)
+		courseGroup.PUT("/:id/edit", middlewares.AuthMiddleware(), handlers.UpdateCourseWithChapters)
+		courseGroup.PUT("/:id/auto-edit", middlewares.AuthMiddleware(), handlers.AutoUpdateCourseWithChapters)
+		courseGroup.DELETE("/:id/delete", middlewares.AuthMiddleware(), handlers.DeleteOneCourseByID)
 		courseGroup.POST("/:id/create-public", middlewares.AuthMiddleware(), handlers.CreatePublicCourseFromCourse)
 		courseGroup.PUT("/:id/update-public", middlewares.AuthMiddleware(), handlers.UpdatePublicCourseFromCourse)
 	}

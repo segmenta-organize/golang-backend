@@ -1,4 +1,4 @@
-package controllers
+package services
 
 import (
 	"strconv"
@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Explore Course Controllers
+// Explore Course services
 
 func GetAllExploreCourses(c *gin.Context) {
 	availableCourses, errorHandler := repositories.GetAllExploreCourses()
@@ -170,7 +170,7 @@ func DeletePublicCourse(c *gin.Context) {
 	utils.SendSuccessResponse(c, "[DELETE PUBLIC COURSE] Public course deleted successfully", nil)
 }
 
-// Explore Course Chapter Controllers
+// Explore Course Chapter services
 
 func GetAllExploreChapterByExploreCourseID(c *gin.Context) {
 	exploreCourseIDStr := c.Param("course_id")

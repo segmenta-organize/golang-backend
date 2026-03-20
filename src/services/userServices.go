@@ -1,4 +1,4 @@
-package controllers
+package services
 
 import (
 	"strconv"
@@ -17,14 +17,14 @@ func GetOneUserByUserID(c *gin.Context) {
 		return
 	}
 
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
+	userID, errorHandler := strconv.Atoi(userIDStr)
+	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[GET ONE PROFILE] Invalid user ID", 400)
 		return
 	}
 
-	user, err := repositories.GetUserByUserID(uint(userID))
-	if err != nil {
+	user, errorHandler := repositories.GetUserByUserID(uint(userID))
+	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[GET ONE PROFILE] User not found", 404)
 		return
 	}
@@ -40,14 +40,14 @@ func UpdateUserByUserID(c *gin.Context) {
 		return
 	}
 
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
+	userID, errorHandler := strconv.Atoi(userIDStr)
+	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE PROFILE] Invalid user ID", 400)
 		return
 	}
 
-	user, err := repositories.GetUserByUserID(uint(userID))
-	if err != nil {
+	user, errorHandler := repositories.GetUserByUserID(uint(userID))
+	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[UPDATE PROFILE] User not found", 404)
 		return
 	}
@@ -98,8 +98,8 @@ func DeleteUserByUserID(c *gin.Context) {
 		return
 	}
 
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
+	userID, errorHandler := strconv.Atoi(userIDStr)
+	if errorHandler != nil {
 		utils.SendErrorResponse(c, "[DELETE USER] Invalid user ID", 400)
 		return
 	}

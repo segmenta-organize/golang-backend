@@ -21,6 +21,11 @@ type VideoMetadata struct {
 	ThumbnailImageURL string `json:"thumbnail"`
 }
 
+// Error implements [error].
+func (v *VideoMetadata) Error() string {
+	panic("unimplemented")
+}
+
 func FetchVideoMetadata(videoLink string) (*VideoMetadata, error) {
 	// Clean the video link (remove extra params like &t=639s&pp=...)
 	cleanLink := cleanVideoURL(videoLink)
@@ -63,7 +68,7 @@ func AutoUpdateMetadata(course *models.Course, videoLink string) *VideoMetadata 
 	course.Description = &metadata.Description
 	course.Channel = &metadata.Channel
 	course.ChannelLink = &metadata.ChannelLink
-	course.VideoLink = &metadata.VideoLink
+	course.VideoLink = &videoLink
 	course.ThumbnailImageURL = &metadata.ThumbnailImageURL
 
 	return metadata
@@ -137,27 +142,27 @@ func ConvertTimestampToSeconds(timestamp string) (int, error) {
 	var totalSeconds int
 	parts := strings.Split(timestamp, ":")
 	if len(parts) == 2 {
-		minutes, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return 0, fmt.Errorf("invalid minutes in timestamp: %w", err)
+		minutes, errorHandler := strconv.Atoi(parts[0])
+		if errorHandler != nil {
+			return 0, fmt.Errorf("invalid minutes in timestamp: %w", errorHandler)
 		}
-		seconds, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return 0, fmt.Errorf("invalid seconds in timestamp: %w", err)
+		seconds, errorHandler := strconv.Atoi(parts[1])
+		if errorHandler != nil {
+			return 0, fmt.Errorf("invalid seconds in timestamp: %w", errorHandler)
 		}
 		totalSeconds = minutes*60 + seconds
 	} else if len(parts) == 3 {
-		hours, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return 0, fmt.Errorf("invalid hours in timestamp: %w", err)
+		hours, errorHandler := strconv.Atoi(parts[0])
+		if errorHandler != nil {
+			return 0, fmt.Errorf("invalid hours in timestamp: %w", errorHandler)
 		}
-		minutes, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return 0, fmt.Errorf("invalid minutes in timestamp: %w", err)
+		minutes, errorHandler := strconv.Atoi(parts[1])
+		if errorHandler != nil {
+			return 0, fmt.Errorf("invalid minutes in timestamp: %w", errorHandler)
 		}
-		seconds, err := strconv.Atoi(parts[2])
-		if err != nil {
-			return 0, fmt.Errorf("invalid seconds in timestamp: %w", err)
+		seconds, errorHandler := strconv.Atoi(parts[2])
+		if errorHandler != nil {
+			return 0, fmt.Errorf("invalid seconds in timestamp: %w", errorHandler)
 		}
 		totalSeconds = hours*3600 + minutes*60 + seconds
 	} else {

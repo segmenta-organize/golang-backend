@@ -1,19 +1,19 @@
 package handlers
 
 import (
-	"segmenta/src/controllers"
+	"segmenta/src/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 func GetOneUserByUserID(c *gin.Context) {
-	controllers.GetOneUserByUserID(c)
+	services.GetOneUserByUserID(c)
 }
 
 func UpdateUserByUserID(c *gin.Context) {
-	controllers.UpdateUserByUserID(c)
+	services.UpdateUserByUserID(c)
 }
 
 func DeleteUserByUserID(c *gin.Context) {
-	controllers.DeleteUserByUserID(c)
+	services.DeleteUserByUserID(c)
 }

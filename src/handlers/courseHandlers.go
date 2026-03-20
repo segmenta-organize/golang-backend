@@ -1,77 +1,81 @@
 package handlers
 
 import (
-	"segmenta/src/controllers"
+	"segmenta/src/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 // Course Handlers
 
-func GetCourses(c *gin.Context) {
-	controllers.GetAllCourses(c)
+func GetAllEnrolledCourses(c *gin.Context) {
+	services.GetAllEnrolledCourses(c)
 }
 
-func GetCourseByID(c *gin.Context) {
-	controllers.GetCourseByID(c)
+func GetOneCourseWithChaptersByID(c *gin.Context) {
+	services.GetOneCourseWithChaptersByID(c)
 }
 
-func CreateCourse(c *gin.Context) {
-	controllers.CreateCourse(c)
+func CreateManualCourseWithChapters(c *gin.Context) {
+	services.CreateManualCourseWithChapters(c)
 }
 
-func AutoCreateCourse(c *gin.Context) {
-	controllers.AutoCreateCourses(c)
+func AutoCreateCourseWithChapters(c *gin.Context) {
+	services.AutoCreateCourseWithChapters(c)
 }
 
-func UpdateCourse(c *gin.Context) {
-	controllers.UpdateCourse(c)
+func UpdateCourseWithChapters(c *gin.Context) {
+	services.UpdateCourseWithChapters(c)
 }
 
-func DeleteCourse(c *gin.Context) {
-	controllers.DeleteCourse(c)
+func AutoUpdateCourseWithChapters(c *gin.Context) {
+	services.AutoUpdateCourseWithChapters(c)
+}
+
+func DeleteOneCourseByID(c *gin.Context) {
+	services.DeleteOneCourseByID(c)
 }
 
 func CreatePublicCourseFromCourse(c *gin.Context) {
-	controllers.CreatePublicCourseFromCourse(c)
+	services.CreatePublicCourseFromCourse(c)
 }
 
 func UpdatePublicCourseFromCourse(c *gin.Context) {
-	controllers.UpdatePublicCourseFromCourse(c)
+	services.UpdatePublicCourseFromCourse(c)
 }
 
 // Chapter Handlers
 
 func GetAllChaptersByCourseID(c *gin.Context) {
-	controllers.GetAllChaptersByCourseID(c)
+	services.GetAllChaptersByCourseID(c)
 }
 
 func GetOneChapterByID(c *gin.Context) {
-	controllers.GetOneChapterByID(c)
+	services.GetOneChapterByID(c)
 }
 
 func CreateChapter(c *gin.Context) {
-	controllers.CreateChapter(c)
+	services.CreateChapter(c)
 }
 
 func UpdateChapter(c *gin.Context) {
-	controllers.UpdateChapter(c)
+	services.UpdateChapter(c)
 }
 
 func DeleteChapter(c *gin.Context) {
-	controllers.DeleteChapter(c)
+	services.DeleteChapter(c)
 }
 
 // Chapter → Explore Chapter public handlers
 
 func CreatePublicChapterFromChapter(c *gin.Context) {
-	controllers.CreatePublicChapterFromChapter(c)
+	services.CreatePublicChapterFromChapter(c)
 }
 
 func UpdatePublicChapterFromChapter(c *gin.Context) {
-	controllers.UpdatePublicChapterFromChapter(c)
+	services.UpdatePublicChapterFromChapter(c)
 }
 
 func DeletePublicChapterFromChapter(c *gin.Context) {
-	controllers.DeletePublicChapterFromChapter(c)
+	services.DeletePublicChapterFromChapter(c)
 }
