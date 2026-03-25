@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupExploreRoutes(router *gin.Engine, config *models.AppConfig) {
+func SetupExploreRoutes(router *gin.RouterGroup, config *models.AppConfig) {
 	exploreGroup := router.Group("/explore/courses")
 	{
 		exploreGroup.GET("/", handlers.GetAllExploreCourses)
@@ -21,7 +21,7 @@ func SetupExploreRoutes(router *gin.Engine, config *models.AppConfig) {
 	}
 }
 
-func SetupExploreChapterRoutes(router *gin.Engine, config *models.AppConfig) {
+func SetupExploreChapterRoutes(router *gin.RouterGroup, config *models.AppConfig) {
 	exploreChapterGroup := router.Group("/explore/chapters")
 	{
 		exploreChapterGroup.GET("/", handlers.GetAllExploreChapterByExploreCourseID)

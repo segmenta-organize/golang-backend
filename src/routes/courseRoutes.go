@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupCourseRoutes(router *gin.Engine, config *models.AppConfig) {
+func SetupCourseRoutes(router *gin.RouterGroup, config *models.AppConfig) {
 	courseGroup := router.Group("/courses")
 	{
 		courseGroup.GET("/", middlewares.AuthMiddleware(), handlers.GetAllEnrolledCourses)
@@ -23,7 +23,7 @@ func SetupCourseRoutes(router *gin.Engine, config *models.AppConfig) {
 	}
 }
 
-func SetupChapterRoutes(router *gin.Engine, config *models.AppConfig) {
+func SetupChapterRoutes(router *gin.RouterGroup, config *models.AppConfig) {
 	chapterGroup := router.Group("/chapters")
 	{
 		chapterGroup.GET("/", middlewares.AuthMiddleware(), handlers.GetAllChaptersByCourseID)

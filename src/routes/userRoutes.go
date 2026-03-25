@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupUserRoutes(router *gin.Engine, config *models.AppConfig) {
+func SetupUserRoutes(router *gin.RouterGroup, config *models.AppConfig) {
 	userGroup := router.Group("/user")
 	{
 		userGroup.GET("/:id", middlewares.AuthMiddleware(), handlers.GetOneUserByUserID)

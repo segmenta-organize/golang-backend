@@ -7,9 +7,13 @@ import (
 )
 
 func SetupAllRoutes(router *gin.Engine, config *models.AppConfig) {
-	SetupAuthRoutes(router, config)
-	SetupCourseRoutes(router, config)
-	SetupChapterRoutes(router, config)
-	SetupExploreRoutes(router, config)
-	SetupExploreChapterRoutes(router, config)
+	api := router.Group("/api")
+	{
+		SetupAuthRoutes(api, config)
+		SetupCourseRoutes(api, config)
+		SetupChapterRoutes(api, config)
+		SetupExploreRoutes(api, config)
+		SetupExploreChapterRoutes(api, config)
+		SetupUserRoutes(api, config) // jangan lupa ini kalau ada
+	}
 }
